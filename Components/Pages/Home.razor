@@ -1,0 +1,80 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<BookstoreDb> DbFactory
+
+<PageTitle>Bookstore - Home</PageTitle>
+
+<div class="row mt-5 mx-auto">
+    <div class="col-12 col-md-3 mb-4">
+        <div style="max-width: 320px;">
+            <label class="form-label fw-bold fs-3 mb-3">Sort by:</label>
+            <select class="form-select form-select-lg" value="@selectedSort" @onchange="OnSortChanged">
+                <option value="">Price</option>
+                <option value="low">Low Price</option>
+                <option value="high">High Price</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="col">
+        @if (books is null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <div class="hstack flex-wrap gap-3">
+                @foreach (var book in books)
+                {
+                    <BookCard Book="@book" />
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private BookstoreDb context { get; set; } = default!;
+    private List<Book> books = new();
+    private string selectedSort = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+        await LoadBooks();
+    }
+
+      private async Task OnSortChanged(ChangeEventArgs e)
+    {
+        selectedSort = e.Value?.ToString() ?? "";
+        Console.WriteLine($"Sort changed: {selectedSort}");
+        await LoadBooks();
+        StateHasChanged();
+    }
+
+    private async Task LoadBooks()
+    {
+        IQueryable<Book> query = context.Books.AsNoTracking();
+
+        if (selectedSort == "low")
+        {
+            query = query.OrderBy(b => b.Price);
+        }
+        else if (selectedSort == "high")
+        {
+            query = query.OrderByDescending(b => b.Price);
+        }
+
+        books = await query.ToListAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (context is not null)
+        {
+            await context.DisposeAsync();
+        }
+    }
+}

@@ -1,0 +1,102 @@
+@page "/books/details"
+
+@using Bookstore.Models
+@using Microsoft.EntityFrameworkCore
+
+@inject NavigationManager Navigation
+@inject IDbContextFactory<Bookstore.Data.BookstoreDb> DbFactory
+
+@if (book == null)
+{
+    <p>Book not found.</p>
+}
+else
+{
+    <h1 class="mb-3">@book.Title</h1>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-3">
+            <img src="@book.CoverImageUrl"
+                 alt="@book.Title"
+                 class="img-fluid"
+                 style="max-width: 100%; height: auto;" />
+
+            <div class="mt-3">
+                <button type="button" class="btn btn-primary">Purchase</button>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <table class="table table-borderless">
+                <tbody>
+                    <tr>
+                        <th style="width: 180px;">Title</th>
+                        <td>@book.Title</td>
+                    </tr>
+                    <tr>
+                        <th>Author</th>
+                        <td>@book.Author</td>
+                    </tr>
+                    <tr>
+                        <th>Genre</th>
+                        <td>
+                            <a href="/genre/@Uri.EscapeDataString(book.Genre)">
+                                @book.Genre
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Publisher</th>
+                        <td>@book.Publisher</td>
+                    </tr>
+                    <tr>
+                        <th>PublicationYear</th>
+                        <td>@book.PublicationYear</td>
+                    </tr>
+                    <tr>
+                        <th>Language</th>
+                        <td>@book.Language</td>
+                    </tr>
+                    <tr>
+                        <th>PageCount</th>
+                        <td>@book.PageCount</td>
+                    </tr>
+                    <tr>
+                        <th>Price</th>
+                        <td>@book.Price.ToString("C")</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>
+                <a href="/books/edit?id=@book.Id">Edit</a> |
+                <a href="/books/delete?id=@book.Id">Delete</a> |
+                <a href="/books">Back to List</a>
+            </p>
+
+            <button type="button" class="btn btn-secondary" @onclick="GoBack">
+                Back
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "id")]
+    public int Id { get; set; }
+
+    private Book? book;
+
+    protected override void OnParametersSet()
+    {
+        using var db = DbFactory.CreateDbContext();
+        book = db.Books.FirstOrDefault(b => b.Id == Id);
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/books");
+    }
+}

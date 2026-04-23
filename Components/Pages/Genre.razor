@@ -1,0 +1,64 @@
+@page "/genre/{GenreName}"
+
+@using Bookstore.Models
+@using Microsoft.EntityFrameworkCore
+
+@inject IDbContextFactory<Bookstore.Data.BookstoreDb> DbFactory
+
+<h3>Genre: @GenreName</h3>
+
+@if (books == null)
+{
+    <p>Loading...</p>
+}
+else if (!books.Any())
+{
+    <p>No books found in this genre.</p>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var book in books)
+        {
+            <div class="col-md-3 col-sm-6">
+                <div class="card h-100 overflow-hidden text-white" style="min-height: 350px;">
+                    <img src="@book.CoverImageUrl"
+                         alt="@book.Title"
+                         class="card-img-top"
+                         style="height: 260px; object-fit: cover;" />
+
+                    <a href="/books/details?id=@book.Id" class="stretched-link"></a>
+
+                    <div class="card-img-overlay d-flex flex-column p-0">
+                        <div class="px-3 py-2 flex-grow-1 bg-dark bg-opacity-50">
+                            <h5 class="card-title">@book.Title</h5>
+                            <h6 class="card-subtitle">@book.Author</h6>
+                        </div>
+
+                        <div class="card-footer mt-auto text-center bg-dark bg-opacity-50">
+                            <span class="fw-bold text-white fs-5">
+                                @book.Price.ToString("C")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string GenreName { get; set; } = string.Empty;
+
+    private List<Book>? books;
+
+    protected override void OnParametersSet()
+    {
+        using var db = DbFactory.CreateDbContext();
+
+        books = db.Books
+            .Where(b => b.Genre == GenreName)
+            .ToList();
+    }
+}

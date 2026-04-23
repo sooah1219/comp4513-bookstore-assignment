@@ -1,0 +1,69 @@
+@page "/myorders"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<BookstoreDb> DbFactory
+
+<PageTitle>My Orders</PageTitle>
+
+<div class="row mt-5 mx-auto">
+    <div class="col">
+
+        @if (!orders.Any())
+        {
+            <p>No orders found.</p>
+        }
+        else
+        {
+            @foreach (var order in orders)
+            {
+                <div class="mb-4 pb-3 border-bottom">
+                    <h3>@order.OrderDate.ToString("MMMM d, yyyy")</h3>
+
+                    @foreach (var item in order.OrderItems)
+                    {
+                        var lineTotal = item.Quantity * item.Book.Price;
+
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>@item.Book.Title (@item.Quantity):</strong>
+                            </div>
+                            <div>
+                                $@lineTotal.ToString("0.00")
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mt-2">
+                        Total (@order.OrderItems.Count()) :
+                        $@order.GetTotal().ToString("0.00")
+                    </div>
+                </div>
+            }
+        }
+
+    </div>
+</div>
+
+@code {
+    private BookstoreDb context = default!;
+    private List<Order> orders = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+
+        orders = await context.Orders
+            .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Book)
+            .AsNoTracking()
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await context.DisposeAsync();
+    }
+}
